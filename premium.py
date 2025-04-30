@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from firebase_admin import firestore
+import uuid
 
 db = firestore.client()
 
@@ -38,3 +39,25 @@ def get_premium_expiry(user_id: str) -> str:
 
     data = doc.to_dict()
     return data.get("premium_until")
+
+def redeem_token(user_id: str, token: str, days: int = 30) -> bool:
+    """Canjea un token y activa premium si es válido y no usado."""
+    ref = db.collection("premium_tokens").document(token)
+    doc = ref.get()
+
+    if not doc.exists:
+        return False
+
+    data = doc.to_dict()
+    if data.get("used_by"):
+        return False
+
+    # Marcar como usado
+    ref.set({
+        "used_by": user_id,
+        "used_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    }, merge=True)
+
+    set_premium(user_id, days)
+    return True
+

@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from firebase_admin import firestore
-from premium import is_premium, set_premium, get_premium_expiry
+from premium import is_premium, set_premium, get_premium_expiry, redeem_token
 import os
 
 db = firestore.client()
@@ -25,6 +25,22 @@ class PremiumCommands(commands.Cog):
             await interaction.response.send_message(
                 f"✨ Sos premium hasta: **{expiry}** (UTC)", ephemeral=True
             )
+
+    # /redeem
+    @app_commands.command(name="redeem", description="Canjea un token para activar premium.")
+    @app_commands.describe(token="El token que te dieron")
+    async def redeem(self, interaction: discord.Interaction, token: str):
+        user_id = str(interaction.user.id)
+        success = redeem_token(user_id, token)
+
+        if success:
+            expiry = get_premium_expiry(user_id)
+            await interaction.response.send_message(
+                f"✅ Token canjeado con éxito. Premium activo hasta **{expiry}** (UTC).",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message("❌ Token inválido o ya fue usado.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(PremiumCommands(bot))
