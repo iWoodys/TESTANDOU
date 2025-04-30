@@ -19,13 +19,11 @@ class Warzone(commands.Cog):
     async def loadouts(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        # Verificar si el comando solo debe ejecutarse en un canal específico
         if interaction.guild_id in self.guild_channels:
             if interaction.channel.id != self.guild_channels[interaction.guild_id]:
                 await interaction.followup.send("Este comando solo puede usarse en el canal permitido.", ephemeral=True)
                 return
 
-        # Obtener los loadouts de Firebase
         ref = get_server_loadouts(interaction.guild_id)
         docs = ref.stream()
 
@@ -38,44 +36,17 @@ class Warzone(commands.Cog):
             await interaction.followup.send("No hay loadouts disponibles.", ephemeral=True)
             return
 
-        # Crear un embed con la lista de loadouts de manera compacta
         embed = discord.Embed(
             title=f"{interaction.user.display_name}, estos son los loadouts actuales:",
             color=discord.Color.dark_green()
         )
 
-        # Crear una lista con los títulos de los loadouts en formato compacto
         loadouts_text = "\n".join([f"{idx}. {title}" for idx, (_, title) in enumerate(loadouts, 1)])
-
-        # Agregar todos los loadouts en un solo campo
         embed.add_field(name="Loadouts:", value=loadouts_text, inline=False)
 
-        # Enviar el embed con los loadouts y los botones para interactuar con ellos
-        await interaction.followup.send(embed=embed, view=LoadoutView(ref, loadouts), ephemeral=False)  # Esto es correcto: 'ephemeral=False' hace visible el mensaje para todos
+        await interaction.followup.send(embed=embed, view=LoadoutView(ref, loadouts), ephemeral=False)
 
-    # Comando para agregar un nuevo loadout
-    @app_commands.command(name="add_load", description="Agregar un nuevo loadout.")
-    @app_commands.default_permissions(administrator=True)
-    async def add_load(self, interaction: discord.Interaction,
-                       weapon_name: str, title: str, image_url: str,
-                       optic: str = "NO", muzzle: str = "NO", barrel: str = "NO",
-                       underbarrel: str = "NO", magazine: str = "NO",
-                       rear_grip: str = "NO", fire_mods: str = "NO"):
-        ref = get_server_loadouts(interaction.guild_id)
-        ref.document(weapon_name).set({
-            "title": title,
-            "image_url": image_url,
-            "Optic": optic,
-            "Muzzle": muzzle,
-            "Barrel": barrel,
-            "Underbarrel": underbarrel,
-            "Magazine": magazine,
-            "Rear Grip": rear_grip,
-            "Fire Mods": fire_mods
-        })
-        await interaction.response.send_message(f"Loadout `{title}` agregado correctamente.", ephemeral=True)
-
-    # Comando para editar un loadout existente
+    # /edit_load
     @app_commands.command(name="edit_load", description="Editar un loadout existente.")
     @app_commands.default_permissions(administrator=True)
     async def edit_load(self, interaction: discord.Interaction,
@@ -105,7 +76,7 @@ class Warzone(commands.Cog):
         doc_ref.update(update_data)
         await interaction.response.send_message(f"Loadout `{weapon_name}` actualizado.", ephemeral=True)
 
-    # Comando para eliminar un loadout
+    # /del_load
     @app_commands.command(name="del_load", description="Eliminar un loadout.")
     @app_commands.default_permissions(administrator=True)
     async def del_load(self, interaction: discord.Interaction, weapon_name: str):
@@ -119,7 +90,7 @@ class Warzone(commands.Cog):
         ref.document(weapon_name).delete()
         await interaction.response.send_message(f"Loadout `{weapon_name}` eliminado correctamente.", ephemeral=True)
 
-    # Comando para expulsar al bot
+    # /offbot
     @app_commands.command(name="offbot", description="Expulsar al bot del servidor (solo el Owner).")
     async def offbot(self, interaction: discord.Interaction):
         if interaction.user.id != OWNER_ID:
@@ -138,14 +109,14 @@ class Warzone(commands.Cog):
         await asyncio.sleep(2)
         await interaction.guild.leave()
 
-    # Comando para configurar un canal específico para usar el comando /loadouts
+    # /setbot
     @app_commands.command(name="setbot", description="Restringir /loadouts a un canal específico.")
     @app_commands.default_permissions(administrator=True)
     async def setbot(self, interaction: discord.Interaction, channel: discord.TextChannel):
         self.guild_channels[interaction.guild_id] = channel.id
         await interaction.response.send_message(f"Canal configurado: {channel.mention}", ephemeral=True)
 
-    # Comando para eliminar la restricción del canal
+    # /unsetbot
     @app_commands.command(name="unsetbot", description="Permitir que /loadouts se use en cualquier canal.")
     @app_commands.default_permissions(administrator=True)
     async def unsetbot(self, interaction: discord.Interaction):
