@@ -2,8 +2,9 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 
-# Cargar la ruta del archivo desde la variable de entorno
-firebase_key_path = os.getenv("FIREBASE_KEY_PATH")
+# Obtener ruta absoluta del archivo firebase_key.json
+current_dir = os.path.dirname(os.path.abspath(__file__))
+firebase_key_path = os.path.join(current_dir, os.getenv("FIREBASE_KEY_PATH"))
 
 # Inicializar Firebase
 cred = credentials.Certificate(firebase_key_path)
@@ -27,4 +28,5 @@ def delete_server_loadout(server_id, weapon_name):
 def get_single_loadout(server_id, weapon_name):
     ref = db.collection('loadouts').document(str(server_id)).collection('items').document(weapon_name)
     return ref.get()
+
 
