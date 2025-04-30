@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from firebase_admin import firestore
-import uuid
 
 db = firestore.client()
 
@@ -40,7 +39,7 @@ def get_premium_expiry(user_id: str) -> str:
     data = doc.to_dict()
     return data.get("premium_until")
 
-def redeem_token(user_id: str, token: str, days: int = 30) -> bool:
+def redeem_token(user_id: str, token: str, default_days: int = 30) -> bool:
     """Canjea un token y activa premium si es válido y no usado."""
     ref = db.collection("premium_tokens").document(token)
     doc = ref.get()
@@ -51,6 +50,9 @@ def redeem_token(user_id: str, token: str, days: int = 30) -> bool:
     data = doc.to_dict()
     if data.get("used_by"):
         return False
+
+    # Usar duración personalizada si existe
+    days = int(data.get("duration_days", default_days))
 
     # Marcar como usado
     ref.set({

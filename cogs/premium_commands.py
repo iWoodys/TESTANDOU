@@ -4,6 +4,7 @@ from discord.ext import commands
 from firebase_admin import firestore
 from premium import is_premium, set_premium, get_premium_expiry, redeem_token
 import os
+from datetime import datetime
 
 db = firestore.client()
 
@@ -22,8 +23,9 @@ class PremiumCommands(commands.Cog):
         if not expiry:
             await interaction.response.send_message("🪙 No sos usuario premium actualmente.", ephemeral=True)
         else:
+            expiry_str = datetime.fromisoformat(expiry.replace("Z", "+00:00")).strftime("%d/%m/%Y %H:%M UTC")
             await interaction.response.send_message(
-                f"✨ Sos premium hasta: **{expiry}** (UTC)", ephemeral=True
+                f"✨ Sos premium hasta: **{expiry_str}**", ephemeral=True
             )
 
     # /redeem
@@ -35,8 +37,9 @@ class PremiumCommands(commands.Cog):
 
         if success:
             expiry = get_premium_expiry(user_id)
+            expiry_str = datetime.fromisoformat(expiry.replace("Z", "+00:00")).strftime("%d/%m/%Y %H:%M UTC")
             await interaction.response.send_message(
-                f"✅ Token canjeado con éxito. Premium activo hasta **{expiry}** (UTC).",
+                f"✅ Token canjeado con éxito. Premium activo hasta **{expiry_str}**.",
                 ephemeral=True
             )
         else:
