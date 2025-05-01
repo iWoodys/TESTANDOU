@@ -81,6 +81,7 @@ class Warzone(commands.Cog):
 
         await interaction.response.send_message(f"✅ Loadout `{title}` agregado correctamente.", ephemeral=True)
 
+    # /edit_load con validación premium
     @app_commands.command(name="edit_load", description="Editar un loadout existente.")
     @app_commands.default_permissions(administrator=True)
     async def edit_load(self, interaction: discord.Interaction,
@@ -88,6 +89,14 @@ class Warzone(commands.Cog):
                         optic: str = None, muzzle: str = None, barrel: str = None,
                         underbarrel: str = None, magazine: str = None,
                         rear_grip: str = None, fire_mods: str = None):
+        user_id = str(interaction.user.id)
+        if not is_premium(user_id):
+            await interaction.response.send_message(
+                "❌ Este comando es exclusivo para usuarios premium.",
+                ephemeral=True
+            )
+            return
+
         ref = get_server_loadouts(interaction.guild_id)
         doc_ref = ref.document(weapon_name)
         doc = doc_ref.get()
@@ -110,9 +119,18 @@ class Warzone(commands.Cog):
         doc_ref.update(update_data)
         await interaction.response.send_message(f"Loadout `{weapon_name}` actualizado.", ephemeral=True)
 
+    # /del_load con validación premium
     @app_commands.command(name="del_load", description="Eliminar un loadout.")
     @app_commands.default_permissions(administrator=True)
     async def del_load(self, interaction: discord.Interaction, weapon_name: str):
+        user_id = str(interaction.user.id)
+        if not is_premium(user_id):
+            await interaction.response.send_message(
+                "❌ Este comando es exclusivo para usuarios premium.",
+                ephemeral=True
+            )
+            return
+
         ref = get_server_loadouts(interaction.guild_id)
         doc = ref.document(weapon_name).get()
 
@@ -123,6 +141,7 @@ class Warzone(commands.Cog):
         ref.document(weapon_name).delete()
         await interaction.response.send_message(f"Loadout `{weapon_name}` eliminado correctamente.", ephemeral=True)
 
+    # /offbot solo para el owner
     @app_commands.command(name="offbot", description="Expulsar al bot del servidor (solo el Owner).")
     async def offbot(self, interaction: discord.Interaction):
         if interaction.user.id != OWNER_ID:
@@ -140,12 +159,14 @@ class Warzone(commands.Cog):
         await asyncio.sleep(2)
         await interaction.guild.leave()
 
+    # /setbot para canal exclusivo
     @app_commands.command(name="setbot", description="Restringir /loadouts a un canal específico.")
     @app_commands.default_permissions(administrator=True)
     async def setbot(self, interaction: discord.Interaction, channel: discord.TextChannel):
         self.guild_channels[interaction.guild_id] = channel.id
         await interaction.response.send_message(f"Canal configurado: {channel.mention}", ephemeral=True)
 
+    # /unsetbot para permitir en todos los canales
     @app_commands.command(name="unsetbot", description="Permitir que /loadouts se use en cualquier canal.")
     @app_commands.default_permissions(administrator=True)
     async def unsetbot(self, interaction: discord.Interaction):
